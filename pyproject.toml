@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sigpa"
-version = "1.2.0"
+version = "1.3.0"
 description = "Swarm Intelligence Graph-based Pathfinding Algorithm (SIGPA) for multi-objective route planning"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -40,6 +40,7 @@ sigpa-demo = "sigpa.demo:main"
 
 [project.optional-dependencies]
 dev = ["pytest"]
+llm = ["anthropic"]
 
 [tool.setuptools]
 packages = ["sigpa"]

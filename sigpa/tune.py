@@ -74,7 +74,7 @@ class WeightedNRMSE:
 
 @dataclass
 class TuneResult:
-    best_evaluator: WeightedNRMSE
+    best_evaluator: object  # WeightedNRMSE, or any evaluator the factory produced
     best_score: float
     default_score: float
     history: List[float] = field(default_factory=list)
@@ -142,12 +142,15 @@ def tune(
     """
     rng = rng or random.Random()
     factory = candidate_factory or _mutate
+    notify = getattr(factory, "feedback", None)
     seed = rng.randrange(2**30)
 
     best = WeightedNRMSE()
     best_score = _score_evaluator(best, scenarios, seed, sigpa_kwargs, route_metric)
     default_score = best_score
     history = [best_score]
+    if notify is not None:
+        notify(best, best_score)
 
     for _ in range(generations):
         for _ in range(offspring):
@@ -155,6 +158,8 @@ def tune(
             score = _score_evaluator(
                 candidate, scenarios, seed, sigpa_kwargs, route_metric
             )
+            if notify is not None:
+                notify(candidate, score)
             if score < best_score:
                 best, best_score = candidate, score
         history.append(best_score)

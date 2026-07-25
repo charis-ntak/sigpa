@@ -50,6 +50,7 @@ pip install -e .[dev]
 | [fuzzy.py](sigpa/fuzzy.py) | JMSE §2.2.2 | Fuzzy inference machinery: membership functions of Figs. 3–6, the 27-rule base of Table 1, Mamdani and zero-order TSK controllers |
 | [sigpaf.py](sigpa/sigpaf.py) | JMSE §2 | SIGPAF metaheuristic (SIGPAF-M / SIGPAF-TSK), USV objective terms (Eqs. 1–3) incl. current-based energy consumption |
 | [tune.py](sigpa/tune.py) | — | Offline automated design of the evaluation criterion: `WeightedNRMSE` (parameterized, runtime-identical generalization of the original evaluation) and an offline `tune()` evolution loop with a pluggable candidate generator |
+| [ahd.py](sigpa/ahd.py) | — | LLM-driven automated heuristic design: `LLMEvaluatorFactory` has Claude propose evaluator candidates from the search history (FunSearch/EoH-style), in a safe weights mode or a code-evolution mode with restricted, validated execution |
 
 ## Usage
 
@@ -123,9 +124,33 @@ best = sigpa(g, start, end, pois, arc_evaluator=result.best_evaluator)
 ```
 
 The identity candidate is always evaluated first, so the tuned evaluator is
-never worse than the default on the training scenarios.  `candidate_factory`
-is the hook for richer offline generators (e.g. LLM-proposed evaluators in
-the style of FunSearch / EoH / ReEvo).
+never worse than the default on the training scenarios.
+
+### LLM-driven candidate generation
+
+`LLMEvaluatorFactory` plugs into `tune()` as the candidate generator: a Claude
+model proposes each candidate informed by the full search history (candidates
+and their achieved scores), in the spirit of FunSearch / EoH / ReEvo.  The LLM
+runs strictly **offline** — the winning evaluator is frozen, deterministic
+Python at deployment, so runtime cost and auditability are unchanged:
+
+```python
+from sigpa import tune, LLMEvaluatorFactory
+
+factory = LLMEvaluatorFactory(          # requires: pip install sigpa[llm]
+    mode="weights",                     # safe default; "code" evolves full
+    problem_description="ATM graphs, "  #   evaluator functions (research use)
+        "safety-dominant objective",
+)
+result = tune(scenarios, candidate_factory=factory, route_metric=my_metric)
+```
+
+`mode="weights"` proposes `WeightedNRMSE` weight vectors (no code execution).
+`mode="code"` evolves evaluator source FunSearch-style; proposals are compiled
+in a restricted namespace (no imports, no I/O) and validated on probe inputs
+before admission.  Any API or parsing failure falls back to random mutation,
+so a tuning run never dies mid-flight.  See
+[examples/demo_llm_ahd.py](examples/demo_llm_ahd.py).
 
 Run the demos / tests:
 

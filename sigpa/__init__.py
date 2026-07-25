@@ -12,7 +12,7 @@ and of its fuzzy variant SIGPAF (Mamdani and Takagi-Sugeno-Kang):
     J. Mar. Sci. Eng. 2021, 9(11), 1243.
 """
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 
 from .graph import Graph
 from .evaluation import nrmse, RouteEvaluator
@@ -29,6 +29,7 @@ from .sigpaf import (
     route_objectives,
 )
 from .tune import WeightedNRMSE, tune, TuneResult
+from .ahd import LLMEvaluatorFactory, CodeEvaluator
 
 __all__ = [
     "Graph",
@@ -49,4 +50,6 @@ __all__ = [
     "WeightedNRMSE",
     "tune",
     "TuneResult",
+    "LLMEvaluatorFactory",
+    "CodeEvaluator",
 ]
