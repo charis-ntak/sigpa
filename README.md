@@ -93,6 +93,11 @@ g.add_arc(1, 2, energy=usv_energy(
 result = sigpaf(g, start=1, end=17, pois=[5, 10, 11],
                 variant="mamdani")   # SIGPAF-M; use "tsk" for SIGPAF-TSK
 print(result.best_route, result.best_objectives)  # (distance, deviations, energy)
+
+# or equivalently, one entry point per variant:
+from sigpa import sigpaf_m, sigpaf_tsk
+result_m = sigpaf_m(g, start=1, end=17, pois=[5, 10, 11])    # Mamdani FIS
+result_tsk = sigpaf_tsk(g, start=1, end=17, pois=[5, 10, 11])  # TSK FIS
 ```
 
 Run the demos / tests:

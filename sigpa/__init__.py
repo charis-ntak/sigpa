@@ -20,7 +20,14 @@ from .poi_srs import poi_srs
 from .gpa import gpa
 from .sigpa import sigpa, SigpaResult
 from .fuzzy import MamdaniFIS, TSKFIS
-from .sigpaf import sigpaf, SigpafResult, usv_energy, route_objectives
+from .sigpaf import (
+    sigpaf,
+    sigpaf_m,
+    sigpaf_tsk,
+    SigpafResult,
+    usv_energy,
+    route_objectives,
+)
 
 __all__ = [
     "Graph",
@@ -33,6 +40,8 @@ __all__ = [
     "MamdaniFIS",
     "TSKFIS",
     "sigpaf",
+    "sigpaf_m",
+    "sigpaf_tsk",
     "SigpafResult",
     "usv_energy",
     "route_objectives",

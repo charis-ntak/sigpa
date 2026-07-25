@@ -184,3 +184,13 @@ def sigpaf(
         iterations=iteration,
         history=history,
     )
+
+
+def sigpaf_m(graph, start, end, pois, **kwargs) -> SigpafResult:
+    """SIGPAF-M: the Mamdani-FIS variant of the paper."""
+    return sigpaf(graph, start, end, pois, variant="mamdani", **kwargs)
+
+
+def sigpaf_tsk(graph, start, end, pois, **kwargs) -> SigpafResult:
+    """SIGPAF-TSK: the Takagi-Sugeno-Kang-FIS variant of the paper."""
+    return sigpaf(graph, start, end, pois, variant="tsk", **kwargs)
