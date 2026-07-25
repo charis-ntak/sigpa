@@ -7,6 +7,13 @@ Python reference implementation of:
 > Operations Research 133 (2021) 105358.
 > https://doi.org/10.1016/j.cor.2021.105358
 
+and of its fuzzy variant **SIGPAF** (Mamdani and Takagi–Sugeno–Kang):
+
+> C. Ntakolia, D. V. Lyridis, *"A Swarm Intelligence Graph-Based Pathfinding
+> Algorithm Based on Fuzzy Logic (SIGPAF): A Case Study on Unmanned Surface
+> Vehicle Multi-Objective Path Planning"*, J. Mar. Sci. Eng. 2021, 9(11), 1243.
+> https://doi.org/10.3390/jmse9111243
+
 Pure Python (stdlib only), no dependencies. Requires Python >= 3.8.
 
 ## Installation
@@ -40,6 +47,8 @@ pip install -e .[dev]
 | [sigpa.py](sigpa/sigpa.py) | §4.2, Alg. 3 | SIGPA metaheuristic: population stage, evaluation stage with acceptance Rules 1–3 |
 | [astar.py](sigpa/astar.py) | §5 | Plain A* shortest-distance baseline used for comparison |
 | [demo.py](sigpa/demo.py) | §5 | Random-scenario demo, installed as the `sigpa-demo` command |
+| [fuzzy.py](sigpa/fuzzy.py) | JMSE §2.2.2 | Fuzzy inference machinery: membership functions of Figs. 3–6, the 27-rule base of Table 1, Mamdani and zero-order TSK controllers |
+| [sigpaf.py](sigpa/sigpaf.py) | JMSE §2 | SIGPAF metaheuristic (SIGPAF-M / SIGPAF-TSK), USV objective terms (Eqs. 1–3) incl. current-based energy consumption |
 
 ## Usage
 
@@ -65,11 +74,33 @@ result = sigpa(
 print(result.best_route, result.best_score)
 ```
 
-Run the demo / tests:
+### SIGPAF — fuzzy variant
+
+The only change with respect to SIGPA is the evaluation of the objectives: a
+fuzzy inference system scores each candidate node during the greedy search and
+ranks the retrieved paths of the population, over the three USV objective
+terms (traveled distance, path deviations, energy consumption):
+
+```python
+from sigpa import sigpaf, usv_energy
+
+# assign per-arc energy from sea currents (Equation 3 of the JMSE paper)
+g.add_arc(1, 2, energy=usv_energy(
+    distance=120.0, usv_velocity=(3.0, 0.0),
+    current_velocity=(1.8, -0.4), fuel_rate=10.0,
+))
+
+result = sigpaf(g, start=1, end=17, pois=[5, 10, 11],
+                variant="mamdani")   # SIGPAF-M; use "tsk" for SIGPAF-TSK
+print(result.best_route, result.best_objectives)  # (distance, deviations, energy)
+```
+
+Run the demos / tests:
 
 ```bash
 sigpa-demo 80 16 7                                # nodes, POIs, seed (after pip install)
 python examples/demo_random_scenario.py 80 16 7   # equivalent, without installing
+python examples/demo_sigpaf_usv.py 60 8 2021      # SIGPA vs SIGPAF-M vs SIGPAF-TSK
 python -m pytest tests/                           # or: python tests/test_sigpa.py
 ```
 
@@ -98,9 +129,22 @@ The paper leaves a few details open; the choices made here are:
 5. **Turn penalty** — computed geometrically from node coordinates as the
    deviation angle between consecutive arc direction vectors.
 
+SIGPAF-specific choices:
+
+6. **Membership functions** — taken exactly from Figures 3–6 of the JMSE
+   paper: inputs use trapezoid (0, 0, 0.25, 0.5) / triangle (0.25, 0.5, 0.75) /
+   trapezoid (0.5, 0.75, 1, 1); the five output sets have breakpoints at
+   sixths (peaks 1/6 … 5/6 with shoulder trapezoids).
+7. **TSK consequents** — the zero-order TSK constants are the centroids of the
+   corresponding Mamdani output sets, so both controllers share one scale.
+8. **In-search inputs** — during the greedy step the FIS inputs are the
+   candidate's normalized distance to the current target, its turn penalty,
+   and its normalized arc energy; a 0.001-weighted distance term breaks the
+   ties caused by membership-function plateaus.
+
 ## Citing
 
-If you use this implementation, please cite the paper:
+If you use this implementation, please cite the papers:
 
 ```bibtex
 @article{ntakolia2021sigpa,
@@ -112,6 +156,19 @@ If you use this implementation, please cite the paper:
   pages   = {105358},
   year    = {2021},
   doi     = {10.1016/j.cor.2021.105358}
+}
+
+@article{ntakolia2021sigpaf,
+  title   = {A Swarm Intelligence Graph-Based Pathfinding Algorithm Based on
+             Fuzzy Logic ({SIGPAF}): A Case Study on Unmanned Surface Vehicle
+             Multi-Objective Path Planning},
+  author  = {Ntakolia, Charis and Lyridis, Dimitrios V.},
+  journal = {Journal of Marine Science and Engineering},
+  volume  = {9},
+  number  = {11},
+  pages   = {1243},
+  year    = {2021},
+  doi     = {10.3390/jmse9111243}
 }
 ```
 

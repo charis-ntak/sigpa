@@ -27,6 +27,7 @@ class ArcData:
     cult: float = 0.0
     loss: float = 0.0
     distance: float = 0.0
+    energy: float = 0.0  # energy consumption of the arc (SIGPAF, JMSE 2021)
 
 
 @dataclass
@@ -60,13 +61,16 @@ class Graph:
         cult: float = 0.0,
         loss: float = 0.0,
         distance: float | None = None,
+        energy: float = 0.0,
     ) -> None:
         """Add an undirected arc; distance defaults to the Euclidean length."""
         if i not in self._coords or j not in self._coords:
             raise KeyError(f"both endpoints of arc ({i}, {j}) must be added first")
         if distance is None:
             distance = self.euclidean(i, j)
-        data = ArcData(risk=risk, cult=cult, loss=loss, distance=distance)
+        data = ArcData(
+            risk=risk, cult=cult, loss=loss, distance=distance, energy=energy
+        )
         self._adj[i][j] = data
         self._adj[j][i] = data
 

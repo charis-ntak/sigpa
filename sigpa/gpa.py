@@ -35,25 +35,49 @@ def _step(
     excluded: FrozenSet[DirectedArc],
     traversals: dict,
     revisit_penalty: float,
+    fis=None,
 ) -> Optional[Node]:
-    """Choose the next node from ``current`` -- steps 6-11 of Algorithm 2."""
+    """Choose the next node from ``current`` -- steps 6-11 of Algorithm 2.
+
+    With ``fis`` set (SIGPAF, JMSE 2021), each candidate arc is scored by
+    the fuzzy inference system over the normalized distance to the
+    target, the turn penalty, and the normalized arc energy; the crisp
+    path-quality output (higher = better) replaces the NRMSE criterion.
+    """
     candidates = [
         n for n in graph.neighbors(current) if (current, n) not in excluded
     ]
     if not candidates:
         return None
 
-    vectors = []
-    for n in candidates:
-        data = graph.arc(current, n)
-        turn = graph.turn_penalty(prev, current, n) if prev is not None else 0.0
-        vectors.append(
-            [data.risk, graph.travel_duration(current, n), turn, data.loss]
-        )
-    scores = nrmse(vectors)
     distances = _min_max_normalize(
         [graph.euclidean(n, target) for n in candidates]
     )
+    turns = [
+        graph.turn_penalty(prev, current, n) if prev is not None else 0.0
+        for n in candidates
+    ]
+
+    if fis is not None:
+        energies = _min_max_normalize(
+            [graph.arc(current, n).energy for n in candidates]
+        )
+        scores = [
+            1.0 - fis.evaluate(d, t, e)
+            for d, t, e in zip(distances, turns, energies)
+        ]
+        # Distance participates through the FIS; keep only an epsilon
+        # share to break the ties caused by membership-function plateaus
+        # in favour of the candidate closest to the target.
+        distances = [0.001 * d for d in distances]
+    else:
+        vectors = []
+        for n, turn in zip(candidates, turns):
+            data = graph.arc(current, n)
+            vectors.append(
+                [data.risk, graph.travel_duration(current, n), turn, data.loss]
+            )
+        scores = nrmse(vectors)
 
     best, best_f = None, None
     for n, s, d in zip(candidates, scores, distances):
@@ -75,6 +99,7 @@ def gpa(
     prev: Optional[Node] = None,
     max_steps: Optional[int] = None,
     revisit_penalty: float = 0.5,
+    fis=None,
 ) -> Optional[List[Node]]:
     """Construct a route from ``start`` to ``end`` visiting all ``pois``.
 
@@ -102,7 +127,7 @@ def gpa(
         while current != target:
             nxt = _step(
                 graph, current, previous, target,
-                excluded_arcs, traversals, revisit_penalty,
+                excluded_arcs, traversals, revisit_penalty, fis,
             )
             if nxt is None:
                 return None
