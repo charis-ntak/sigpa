@@ -49,6 +49,7 @@ pip install -e .[dev]
 | [demo.py](sigpa/demo.py) | §5 | Random-scenario demo, installed as the `sigpa-demo` command |
 | [fuzzy.py](sigpa/fuzzy.py) | JMSE §2.2.2 | Fuzzy inference machinery: membership functions of Figs. 3–6, the 27-rule base of Table 1, Mamdani and zero-order TSK controllers |
 | [sigpaf.py](sigpa/sigpaf.py) | JMSE §2 | SIGPAF metaheuristic (SIGPAF-M / SIGPAF-TSK), USV objective terms (Eqs. 1–3) incl. current-based energy consumption |
+| [tune.py](sigpa/tune.py) | — | Offline automated design of the evaluation criterion: `WeightedNRMSE` (parameterized, runtime-identical generalization of the original evaluation) and an offline `tune()` evolution loop with a pluggable candidate generator |
 
 ## Usage
 
@@ -99,6 +100,32 @@ from sigpa import sigpaf_m, sigpaf_tsk
 result_m = sigpaf_m(g, start=1, end=17, pois=[5, 10, 11])    # Mamdani FIS
 result_tsk = sigpaf_tsk(g, start=1, end=17, pois=[5, 10, 11])  # TSK FIS
 ```
+
+### Offline tuning of the evaluation criterion
+
+The runtime evaluation stays as light as original SIGPA; the design effort
+moves offline.  `WeightedNRMSE` generalizes the original criterion with
+per-measure weights (all ones == original, bit-for-bit), and `tune()` evolves
+those weights against benchmark scenarios for a chosen deployment objective —
+e.g. a safety-dominant one:
+
+```python
+from sigpa import tune, sigpa
+from sigpa.evaluation import RouteEvaluator
+
+scenarios = [(g1, start1, end1, pois1), (g2, start2, end2, pois2)]
+safety_metric = lambda g, route: RouteEvaluator(g, weights=(5, 1, 1, 1))(route)
+
+result = tune(scenarios, route_metric=safety_metric,
+              generations=15, max_iterations=60)
+# deploy the frozen evaluator at zero extra runtime cost:
+best = sigpa(g, start, end, pois, arc_evaluator=result.best_evaluator)
+```
+
+The identity candidate is always evaluated first, so the tuned evaluator is
+never worse than the default on the training scenarios.  `candidate_factory`
+is the hook for richer offline generators (e.g. LLM-proposed evaluators in
+the style of FunSearch / EoH / ReEvo).
 
 Run the demos / tests:
 

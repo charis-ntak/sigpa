@@ -36,6 +36,7 @@ def _step(
     traversals: dict,
     revisit_penalty: float,
     fis=None,
+    arc_evaluator=None,
 ) -> Optional[Node]:
     """Choose the next node from ``current`` -- steps 6-11 of Algorithm 2.
 
@@ -43,6 +44,10 @@ def _step(
     the fuzzy inference system over the normalized distance to the
     target, the turn penalty, and the normalized arc energy; the crisp
     path-quality output (higher = better) replaces the NRMSE criterion.
+
+    With ``arc_evaluator`` set, the callable receives the candidates'
+    measure vectors and normalized distances and returns their fitness
+    values directly (e.g. :class:`sigpa.tune.WeightedNRMSE`).
     """
     candidates = [
         n for n in graph.neighbors(current) if (current, n) not in excluded
@@ -62,14 +67,13 @@ def _step(
         energies = _min_max_normalize(
             [graph.arc(current, n).energy for n in candidates]
         )
-        scores = [
-            1.0 - fis.evaluate(d, t, e)
-            for d, t, e in zip(distances, turns, energies)
-        ]
         # Distance participates through the FIS; keep only an epsilon
         # share to break the ties caused by membership-function plateaus
         # in favour of the candidate closest to the target.
-        distances = [0.001 * d for d in distances]
+        fitness = [
+            1.0 - fis.evaluate(d, t, e) + 0.001 * d
+            for d, t, e in zip(distances, turns, energies)
+        ]
     else:
         vectors = []
         for n, turn in zip(candidates, turns):
@@ -77,14 +81,19 @@ def _step(
             vectors.append(
                 [data.risk, graph.travel_duration(current, n), turn, data.loss]
             )
-        scores = nrmse(vectors)
+        if arc_evaluator is not None:
+            fitness = arc_evaluator(vectors, distances)
+        else:
+            fitness = [
+                s + d for s, d in zip(nrmse(vectors), distances)
+            ]
 
     best, best_f = None, None
-    for n, s, d in zip(candidates, scores, distances):
+    for n, f0 in zip(candidates, fitness):
         # Safeguard against greedy oscillation: re-traversing an arc already
         # on the route is increasingly discouraged (in the spirit of the
         # multiple-crossover penalty of o.f.4).
-        f = s + d + revisit_penalty * traversals.get(frozenset((current, n)), 0)
+        f = f0 + revisit_penalty * traversals.get(frozenset((current, n)), 0)
         if best_f is None or f < best_f:
             best, best_f = n, f
     return best
@@ -100,6 +109,7 @@ def gpa(
     max_steps: Optional[int] = None,
     revisit_penalty: float = 0.5,
     fis=None,
+    arc_evaluator=None,
 ) -> Optional[List[Node]]:
     """Construct a route from ``start`` to ``end`` visiting all ``pois``.
 
@@ -128,6 +138,7 @@ def gpa(
             nxt = _step(
                 graph, current, previous, target,
                 excluded_arcs, traversals, revisit_penalty, fis,
+                arc_evaluator,
             )
             if nxt is None:
                 return None

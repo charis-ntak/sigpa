@@ -51,6 +51,7 @@ def sigpa(
     tol: float = 0.0,
     evaluator: Optional[Callable[[Sequence[Node]], float]] = None,
     rng: Optional[random.Random] = None,
+    arc_evaluator=None,
 ) -> SigpaResult:
     """Solve the multi-objective route-planning problem with SIGPA.
 
@@ -63,7 +64,7 @@ def sigpa(
     evaluate = evaluator or RouteEvaluator(graph)
 
     # Initialization stage (steps 1-4): initial solution via GPA.
-    s0 = gpa(graph, start, end, pois)
+    s0 = gpa(graph, start, end, pois, arc_evaluator=arc_evaluator)
     if s0 is None:
         raise RuntimeError("GPA could not construct an initial feasible route")
     e0 = evaluate(s0)
@@ -100,6 +101,7 @@ def sigpa(
             tail = gpa(
                 graph, m, end, pending,
                 excluded_arcs=excluded, prev=prev,
+                arc_evaluator=arc_evaluator,
             )
             if tail is None:
                 continue  # infeasible particle, k_i is reduced (step 14)
