@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sigpa"
+version = "1.0.0"
+description = "Swarm Intelligence Graph-based Pathfinding Algorithm (SIGPA) for multi-objective route planning"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Charis Ntakolia", email = "charis.nt@gmail.com" },
+]
+requires-python = ">=3.8"
+keywords = [
+    "swarm-intelligence",
+    "pathfinding",
+    "route-planning",
+    "multi-objective-optimization",
+    "metaheuristic",
+    "graph",
+    "tourist-route-planning",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.urls]
+Homepage = "https://github.com/cntakolia/sigpa"
+Paper = "https://doi.org/10.1016/j.cor.2021.105358"
+
+[project.scripts]
+sigpa-demo = "sigpa.demo:main"
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools]
+packages = ["sigpa"]
