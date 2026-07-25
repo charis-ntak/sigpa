@@ -51,6 +51,7 @@ pip install -e .[dev]
 | [sigpaf.py](sigpa/sigpaf.py) | JMSE §2 | SIGPAF metaheuristic (SIGPAF-M / SIGPAF-TSK), USV objective terms (Eqs. 1–3) incl. current-based energy consumption |
 | [tune.py](sigpa/tune.py) | — | Offline automated design of the evaluation criterion: `WeightedNRMSE` (parameterized, runtime-identical generalization of the original evaluation) and an offline `tune()` evolution loop with a pluggable candidate generator |
 | [ahd.py](sigpa/ahd.py) | — | LLM-driven automated heuristic design: `LLMEvaluatorFactory` has Claude propose evaluator candidates from the search history (FunSearch/EoH-style), in a safe weights mode or a code-evolution mode with restricted, validated execution |
+| [sigpa_llm.py](sigpa/sigpa_llm.py) | — | **SIGPA-LLM**: the third family member. `sigpa_llm_train()` designs the evaluation criterion offline (LLM-proposed candidates, mutation fallback); `sigpa_llm()` runs standard SIGPA with the frozen evolved evaluator — deterministic and exactly as fast as the original at runtime |
 
 ## Usage
 
@@ -151,6 +152,26 @@ in a restricted namespace (no imports, no I/O) and validated on probe inputs
 before admission.  Any API or parsing failure falls back to random mutation,
 so a tuning run never dies mid-flight.  See
 [examples/demo_llm_ahd.py](examples/demo_llm_ahd.py).
+
+### SIGPA-LLM
+
+The packaged algorithm: offline design, online SIGPA.
+
+```python
+from sigpa import sigpa_llm_train, sigpa_llm
+
+# offline: design the evaluator for the problem class (LLM if credentials
+# are available, mutation fallback otherwise)
+model = sigpa_llm_train(training_scenarios, route_metric=my_metric,
+                        problem_description="ATM graphs, safety-dominant")
+
+# online: standard SIGPA with the frozen evaluator -- same runtime cost
+result = sigpa_llm(g, start, end, pois, model=model)
+```
+
+The evaluation criterion is the only thing that changes across the family:
+SIGPA uses the hand-designed NRMSE, SIGPAF a hand-designed fuzzy system,
+SIGPA-LLM an offline-evolved criterion — the swarm process is identical.
 
 Run the demos / tests:
 
