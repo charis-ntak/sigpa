@@ -32,7 +32,7 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/cntakolia/sigpa"
+Homepage = "https://github.com/charis-ntak/sigpa"
 Paper = "https://doi.org/10.1016/j.cor.2021.105358"
 
 [project.scripts]

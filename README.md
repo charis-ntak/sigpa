@@ -20,7 +20,7 @@ pip install .
 or directly from GitHub once published:
 
 ```bash
-pip install git+https://github.com/<your-username>/sigpa.git
+pip install git+https://github.com/charis-ntak/sigpa.git
 ```
 
 For development (editable install with test tooling):
