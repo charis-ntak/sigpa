@@ -87,12 +87,20 @@ def _score_evaluator(
     sigpa_kwargs: dict,
     route_metric: Optional[Callable[[Graph, Sequence[Node]], float]] = None,
 ) -> float:
-    """Mean route-evaluation score of SIGPA over the scenarios."""
+    """Mean route-evaluation score of SIGPA over the scenarios.
+
+    When a ``route_metric`` is given it is also used as the swarm's
+    internal solution evaluator, so selection pressure inside SIGPA is
+    aligned with the deployment objective being tuned for.
+    """
     total = 0.0
     for graph, start, end, pois in scenarios:
+        internal = (None if route_metric is None
+                    else (lambda route, _g=graph: route_metric(_g, route)))
         result = sigpa(
             graph, start, end, pois,
             arc_evaluator=evaluator,
+            evaluator=internal,
             rng=random.Random(rng_seed),
             **sigpa_kwargs,
         )
@@ -123,6 +131,7 @@ def tune(
         Callable[[WeightedNRMSE, random.Random], WeightedNRMSE]
     ] = None,
     route_metric: Optional[Callable[[Graph, Sequence[Node]], float]] = None,
+    eval_seed: Optional[int] = None,
     **sigpa_kwargs,
 ) -> TuneResult:
     """Offline (1+lambda) evolution of the evaluation criterion.
@@ -143,7 +152,9 @@ def tune(
     rng = rng or random.Random()
     factory = candidate_factory or _mutate
     notify = getattr(factory, "feedback", None)
-    seed = rng.randrange(2**30)
+    # ``eval_seed`` fixes the rng used for the inner SIGPA runs; set it to
+    # the seed of the deployment runs so tuned evaluators transfer exactly.
+    seed = eval_seed if eval_seed is not None else rng.randrange(2**30)
 
     best = WeightedNRMSE()
     best_score = _score_evaluator(best, scenarios, seed, sigpa_kwargs, route_metric)

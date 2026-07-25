@@ -42,12 +42,12 @@ class SigpaLLMModel:
     evaluator: object                       # WeightedNRMSE or CodeEvaluator
     tune_result: Optional[TuneResult] = None
     design_history: List = field(default_factory=list)
+    llm_proposals: int = 0
+    fallback_proposals: int = 0
 
     @property
     def used_llm(self) -> bool:
-        return any("fallback" not in (label or "")
-                   for label, _ in self.design_history) \
-            if self.design_history else False
+        return self.llm_proposals > 0
 
 
 def sigpa_llm_train(
@@ -97,6 +97,8 @@ def sigpa_llm_train(
         evaluator=result.best_evaluator,
         tune_result=result,
         design_history=list(factory.history) if factory is not None else [],
+        llm_proposals=getattr(factory, "llm_proposals", 0),
+        fallback_proposals=getattr(factory, "fallback_proposals", 0),
     )
 
 

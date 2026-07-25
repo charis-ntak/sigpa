@@ -144,6 +144,8 @@ class LLMEvaluatorFactory:
     problem_description: str = ""
     max_history: int = 20
     history: List[Tuple[str, Optional[float]]] = field(default_factory=list)
+    llm_proposals: int = 0      # candidates actually produced by the LLM
+    fallback_proposals: int = 0  # candidates produced by mutation fallback
 
     def __post_init__(self):
         if self.mode not in ("weights", "code"):
@@ -160,6 +162,7 @@ class LLMEvaluatorFactory:
         try:
             candidate = self._propose(parent)
             if candidate is not None:
+                self.llm_proposals += 1
                 return candidate
         except Exception:
             pass
@@ -167,6 +170,7 @@ class LLMEvaluatorFactory:
         fallback = _mutate(parent if isinstance(parent, WeightedNRMSE)
                            else WeightedNRMSE(), rng)
         self._pending = self._describe(fallback) + " (fallback mutation)"
+        self.fallback_proposals += 1
         return fallback
 
     def feedback(self, candidate, score: float) -> None:

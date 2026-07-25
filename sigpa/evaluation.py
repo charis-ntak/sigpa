@@ -98,6 +98,8 @@ class RouteEvaluator:
         for key, count in crossings.items():
             if count > 1:
                 i, j = tuple(key)
+                if not g.has_arc(i, j):   # directed graphs: frozenset loses order
+                    i, j = j, i
                 data = g.arc(i, j)
                 z4 += data.cult * data.loss * (count - 1)
         w1, w2, w3, w4 = self.weights
